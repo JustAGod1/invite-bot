@@ -178,15 +178,15 @@ async fn start_dialog(
     };
 
     if let Some(registered) = registered {
-        bot.send_message(msg.chat.id, format!("{}, кажется ты уже зарегистрирован. На всякий случай вот тебе ссылка еще раз.\n\
+        bot.send_message(msg.chat.id, format!("{}, кажется, ты уже зарегистрирован. На всякий случай вот тебе ссылка еще раз.\n\
         {}\n\
-        Если произошла какая-то ошибка пиши @JustAG0d", registered.full_name, INVITE_LINK)).await?;
+        Если произошла какая-то ошибка, пиши @JustAG0d", registered.full_name, INVITE_LINK)).await?;
         return Ok(());
     }
 
     bot.send_message(msg.chat.id,
                      "Привет, и добро пожаловать на КТ!\n\
-                        Прежде чем ты наконец познакомишься со своими однокурсниками мне нужно добавить тебя в чат к ним.\n\
+                        Прежде чем ты наконец познакомишься со своими однокурсниками, мне нужно добавить тебя в чат к ним.\n\
                         Для этого мне надо удостовериться, что ты есть в приказе на зачисление\n\
                         Пожалуйста пришли свое полное ФИО как оно написано на https://abit.itmo.ru/\n",
     ).send().await?;
@@ -224,9 +224,9 @@ async fn receive_name(
                 let user_id = user.telegram_id.as_ref();
 
                 if user_id.is_some() {
-                    bot.send_message(msg.chat.id, format!("{}, кажется ты уже зарегистрирован. На всякий случай вот тебе ссылка еще раз.\n\
+                    bot.send_message(msg.chat.id, format!("{}, кажется, ты уже зарегистрирован. На всякий случай вот тебе ссылка еще раз.\n\
                     {}\n\
-                    Если произошла какая-то ошибка пиши @JustAG0d", INVITE_LINK, user.full_name)).await?;
+                    Если произошла какая-то ошибка, пиши @JustAG0d", INVITE_LINK, user.full_name)).await?;
 
                     dialogue.update(DialogState::Start).await.unwrap();
 
@@ -235,17 +235,6 @@ async fn receive_name(
 
                 v
             } else {
-                match db.query_all_names() {
-                    Ok(mut v) => {
-                        v.sort_by_key(|a| edit_distance::edit_distance(&a, &text));
-                        let top: Vec<String> = v.into_iter().take(5).collect();
-                        if top.len() >= 1 {
-                            bot.send_message(msg.chat.id, format!("Кажется такой фамилии нет в приказе. Но я нашел похожие:\n{}", top.join("\n"))).await?;
-                        }
-                    }
-                    Err(e) => { error!("{}", e); }
-                }
-
                 None
             }
         }
