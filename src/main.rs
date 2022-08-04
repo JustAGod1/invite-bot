@@ -226,7 +226,7 @@ async fn receive_name(
                 if user_id.is_some() {
                     bot.send_message(msg.chat.id, format!("{}, кажется, ты уже зарегистрирован. На всякий случай вот тебе ссылка еще раз.\n\
                     {}\n\
-                    Если произошла какая-то ошибка, пиши @JustAG0d", INVITE_LINK, user.full_name)).await?;
+                    Если произошла какая-то ошибка, пиши @JustAG0d", user.full_name, INVITE_LINK)).await?;
 
                     dialogue.update(DialogState::Start).await.unwrap();
 
