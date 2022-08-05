@@ -4,8 +4,6 @@ mod db;
 extern crate log;
 
 
-use std::fmt::format;
-use std::fs::File;
 use teloxide::dptree;
 
 use std::sync::Arc;
@@ -183,6 +181,21 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
         Command::DumpCsv => {
             match db.dump_to_csv() {
                 Ok(v) => {
+                    let mut r = String::new();
+                    let mut i = 0;
+
+                    for line in v.split("\n") {
+                        r.push_str(&line);
+                        r.push('\n');
+                        i += 1;
+
+                        if i > 30 {
+                            bot.send_message(msg.chat.id, &r).await?;
+                            r.clear();
+                            i = 0;
+                        }
+                    }
+
                     bot.send_message(msg.chat.id, v).await?;
                 }
                 Err(e) => {

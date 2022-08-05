@@ -1,5 +1,5 @@
-use std::sync::{Arc, Mutex};
-use sqlite::{Connection, Cursor, OpenFlags, Row, State, Value};
+use std::sync::Mutex;
+use sqlite::{Connection, Row, State, Value};
 
 pub struct User {
     pub full_name: String,
@@ -68,26 +68,6 @@ impl DBConn {
 
         Ok(None)
     }
-
-
-    pub fn query_all_names(&self) -> Result<Vec<String>, String> {
-        let conn = self.conn.lock()
-            .map_err(|a| a.to_string())?;
-        let mut cursor = conn
-            .prepare("SELECT full_name FROM users")
-            .map_err(|a| a.to_string())?
-            .into_cursor()
-            .bind(&[])
-            .map_err(|a| a.to_string())?;
-
-        let mut users = Vec::new();
-        while let Some(Ok(row)) = cursor.next() {
-            users.push(row.try_get(0).map_err(|a| a.to_string())?);
-        }
-
-        Ok(users)
-    }
-
 
     pub fn insert_telegram_data(&self, fullname: String, telegram_id: u64) -> Result<(), String>{
         let conn = self.conn.lock()
