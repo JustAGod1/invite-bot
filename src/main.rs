@@ -321,7 +321,7 @@ async fn receive_name(
 ) -> Result<(), RequestError> {
     let format = "Пожалуйста отправь свое ФИО одним сообщением. Пример: Иванов Иван Иванович 5411";
     let text = if let Some(text) = msg.text() {
-        Regex::new("\\s").unwrap().replace(text, " ").trim().replace("й", "й").to_string()
+        Regex::new("\\s").unwrap().replace(text, " ").trim().replace("й", "й").replace("ё", "ё").to_string()
     } else {
         bot.send_message(msg.chat.id, format).await?;
         return Ok(());
