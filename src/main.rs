@@ -396,7 +396,7 @@ async fn receive_name(
             return Ok(());
         }
         let id = id.unwrap();
-        if let Err(e) = db.insert_telegram_data(text, id.0) {
+        if let Err(e) = db.insert_telegram_data(text[..text.rfind(' ').unwrap()].trim().to_string(), id.0) {
             error!("{}", e);
             bot.send_message(msg.chat.id, "Техническая ошибка.").await?;
             return Ok(());
