@@ -19,13 +19,14 @@ use teloxide::utils::command::BotCommands;
 use db::DBConn;
 use std::io::Write;
 use std::path::PathBuf;
+use std::str::FromStr;
 use chrono::Local;
 use env_logger::Builder;
 use regex::Regex;
 
 
 const GROUP_ID: i64 = -1001509012802;
-const COMMANDER_IDS: &[UserId] = &[UserId(429171352), UserId(316671439), UserId(292062277)];
+const COMMANDER_IDS: &[UserId] = &[UserId(429171352), UserId(316671439), UserId(292062277), UserId(972295645)];
 const INVITE_LINK: &str = "https://t.me/+5cOB3ZgEnVQyMzIy";
 
 #[tokio::main]
@@ -141,6 +142,8 @@ enum Command {
     Add,
     #[command(description = "<ФИО> <id> - добавляет ФИО")]
     AddId,
+    #[command(description = "резолвит ник")]
+    Resolve,
 }
 
 async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBConn>) -> Result<(), RequestError> {
@@ -236,6 +239,19 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
                 }
             }
 
+        }
+
+        Command::Resolve => {
+            let id = msg.text().unwrap_or("").trim()["/resolve".len()..].trim();
+            match i64::from_str(id) {
+                Ok(o) => {
+                    let r = bot.get_chat(ChatId(o)).await?;
+                    bot.send_message(msg.chat.id, format!("{}", r.username().unwrap_or("unknown"))).await?;
+                }
+                Err(e) => {
+                    bot.send_message(msg.chat.id, format!("{}", e)).await?;
+                }
+            }
         }
     }
 
