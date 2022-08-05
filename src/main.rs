@@ -20,6 +20,7 @@ use teloxide::types::MessageKind;
 use teloxide::utils::command::BotCommands;
 use db::DBConn;
 use std::io::Write;
+use std::path::PathBuf;
 use chrono::Local;
 use env_logger::Builder;
 use regex::Regex;
@@ -160,7 +161,7 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
             }
         }
         Command::Dump => {
-            if let Err(e) = bot.send_document(msg.chat.id, InputFile::file_id("db.sqlite")).await {
+            if let Err(e) = bot.send_document(msg.chat.id, InputFile::file(PathBuf::from("db.sqlite"))).await {
                 error!("{:?}", e);
                 bot.send_message(msg.chat.id, format!("{:?}", e)).await?;
             }
