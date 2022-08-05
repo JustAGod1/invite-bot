@@ -117,7 +117,6 @@ async fn check_member(member: &UserId, b: AutoSend<Bot>, arc: Arc<DBConn>) -> Re
 
     if !exists {
         b.kick_chat_member(ChatId(GROUP_ID), member.clone()).await.map_err(|a| a.to_string())?;
-        b.unban_chat_member(ChatId(GROUP_ID), member.clone()).await.map_err(|a| a.to_string())?;
     }
 
 
