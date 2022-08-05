@@ -165,4 +165,28 @@ impl DBConn {
         Ok(result)
     }
 
+    pub fn update_telegram_id(&self, fullname: &str, id: &str) -> Result<(), String>{
+        let conn = self.conn.lock()
+            .map_err(|a| a.to_string())?;
+        let mut statement = conn.prepare("UPDATE users SET telegram_id = ? WHERE full_name = ?")
+            .map_err(|a| a.to_string())?
+            .bind(1, id.to_string().as_str()).map_err(|a| a.to_string())?
+            .bind(2, fullname.to_string().as_str()).map_err(|a| a.to_string())?;
+
+        loop {
+            match statement.next() {
+                Ok(v) => {
+                    if matches!(v, State::Done) {
+                        break
+                    }
+                }
+                Err(a) => {
+                    return Err(a.to_string());
+                }
+            }
+        }
+
+        Ok(())
+    }
+
 }

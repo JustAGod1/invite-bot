@@ -139,6 +139,8 @@ enum Command {
     DumpCsv,
     #[command(description = "<ФИО> - добавляет ФИО")]
     Add,
+    #[command(description = "<ФИО> <id> - добавляет ФИО")]
+    AddId,
 }
 
 async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBConn>) -> Result<(), RequestError> {
@@ -202,6 +204,38 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
                     bot.send_message(msg.chat.id, format!("{}", e)).await?;
                 }
             }
+        }
+        Command::AddId => {
+
+            let fullname_and_id = msg.text().unwrap_or("").trim()["/addid".len()..].trim();
+            if fullname_and_id.rfind(" ").is_none() {
+                bot.send_message(msg.chat.id, "Неверный формат").await?;
+                return Ok(());
+            }
+            let fullname = fullname_and_id[..fullname_and_id.rfind(" ").unwrap()].trim();
+            let id = fullname_and_id[fullname_and_id.rfind(" ").unwrap()..].trim();
+
+
+            match db.find_by_full_name(fullname) {
+                Ok(o) => {
+                    if o.is_none() {
+                        bot.send_message(msg.chat.id, "Нет такого ФИО").await?;
+                        return Ok(());
+                    } else {
+                        if let Err(e) = db.update_telegram_id(fullname, id) {
+                            error!("{}", e);
+                            bot.send_message(msg.chat.id, format!("{}", e)).await?;
+                        } else {
+                            bot.send_message(msg.chat.id, format!("Обновил id у {} на {}", fullname, id)).await?;
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("{}", e);
+                    bot.send_message(msg.chat.id, format!("{}", e)).await?;
+                }
+            }
+
         }
     }
 
