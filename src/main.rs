@@ -26,7 +26,7 @@ use regex::Regex;
 
 const GROUP_ID: i64 = -1001509012802;
 const COMMANDER_IDS: &[UserId] = &[UserId(429171352), UserId(316671439), UserId(292062277)];
-const INVITE_LINK: &str = "https://t.me/+j-2EHIs0HqVhZjRi";
+const INVITE_LINK: &str = "https://t.me/+5cOB3ZgEnVQyMzIy";
 
 #[tokio::main]
 async fn main() {
