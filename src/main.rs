@@ -4,6 +4,8 @@ mod db;
 extern crate log;
 
 
+use std::fmt::format;
+use std::fs::File;
 use teloxide::dptree;
 
 use std::sync::Arc;
@@ -12,7 +14,7 @@ use log::LevelFilter;
 use teloxide::{Bot, RequestError};
 use teloxide::dispatching::dialogue::InMemStorage;
 use teloxide::prelude::*;
-use teloxide::types::ChatKind;
+use teloxide::types::{ChatKind, InputFile};
 use teloxide::types::MessageKind;
 
 use teloxide::utils::command::BotCommands;
@@ -20,10 +22,11 @@ use db::DBConn;
 use std::io::Write;
 use chrono::Local;
 use env_logger::Builder;
+use regex::Regex;
 
 
 const GROUP_ID: i64 = -1001509012802;
-const OWNER_ID: u64 = 429171352;
+const COMMANDER_IDS: &[UserId] = &[UserId(429171352), UserId(316671439), UserId(292062277)];
 const INVITE_LINK: &str = "https://t.me/+j-2EHIs0HqVhZjRi";
 
 #[tokio::main]
@@ -61,7 +64,7 @@ async fn run() -> Result<(), String> {
             .branch(
                 dptree::filter(|msg: Message| {
                     if let MessageKind::Common(msg) = msg.kind {
-                        msg.from.map(|from| from.id == UserId(OWNER_ID)).unwrap_or(false)
+                        msg.from.map(|from| COMMANDER_IDS.contains(&from.id)).unwrap_or(false)
                     } else {
                         false
                     }
@@ -130,9 +133,13 @@ enum Command {
     Help,
     #[command(description = "display this text.")]
     Start,
+    #[command(description = "<ФИО> - забывает ид пользователя с этим ФИО")]
+    Forget,
+    #[command(description = "отдает бд файлом")]
+    Dump,
 }
 
-async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command) -> Result<(), RequestError> {
+async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBConn>) -> Result<(), RequestError> {
     if !matches!(msg.chat.kind, ChatKind::Private(_)) {
         return Ok(());
     }
@@ -140,6 +147,23 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command) -> Result<()
     match command {
         Command::Help | Command::Start => {
             bot.send_message(msg.chat.id, Command::descriptions().to_string()).await?;
+        }
+
+        Command::Forget => {
+            let fullname = msg.text().unwrap_or("").trim()["/forget".len()..].trim();
+
+            if let Err(e) = db.delete_telegram_id(fullname) {
+                error!("{}", e);
+                bot.send_message(msg.chat.id, format!("{}", e)).await?;
+            } else {
+                bot.send_message(msg.chat.id, format!("Забыл Telegram Id у {}", fullname)).await?;
+            }
+        }
+        Command::Dump => {
+            if let Err(e) = bot.send_document(msg.chat.id, InputFile::file_id("db.sqlite")).await {
+                error!("{:?}", e);
+                bot.send_message(msg.chat.id, format!("{:?}", e)).await?;
+            }
         }
     }
 
@@ -186,9 +210,8 @@ async fn start_dialog(
 
     bot.send_message(msg.chat.id,
                      "Привет, и добро пожаловать на КТ!\n\n\
-                        Прежде чем ты наконец познакомишься со своими однокурсниками, мне нужно добавить тебя в чат к ним.\n\
-                        Для этого мне надо удостовериться, что ты есть в приказе на зачисление\n\
-                        Пожалуйста пришли свое полное ФИО как оно написано на https://abit.itmo.ru/\n",
+                           Для того, чтобы добавить тебя в чат и канал первокурсников, мне нужно удостовериться, что ты есть в приказе на зачисление.\n\
+                           Пожалуйста, пришли свое полное ФИО, как оно указано в личном кабинете абитуриента abitlk.itmo.ru",
     ).send().await?;
 
     if let Err(e) = dialogue.update(DialogState::WaitingForName).await {
@@ -209,7 +232,7 @@ async fn receive_name(
 ) -> Result<(), RequestError> {
     let format = "Пожалуйста отправь свое ФИО одним сообщением. Пример: Иванов Иван Иванович";
     let text = if let Some(text) = msg.text() {
-        text.trim().to_string()
+        Regex::new("\\s").unwrap().replace(text, " ").to_string()
     } else {
         bot.send_message(msg.chat.id, format).await?;
         return Ok(());
@@ -224,9 +247,8 @@ async fn receive_name(
                 let user_id = user.telegram_id.as_ref();
 
                 if user_id.is_some() {
-                    bot.send_message(msg.chat.id, format!("{}, кажется, ты уже зарегистрирован. На всякий случай вот тебе ссылка еще раз.\n\
-                    {}\n\
-                    Если произошла какая-то ошибка, пиши @JustAG0d", user.full_name, INVITE_LINK)).await?;
+                    bot.send_message(msg.chat.id, format!("{}, кажется, ты уже зарегистрирован. \n\
+                    Если произошла какая-то ошибка, пиши @JustAG0d", user.full_name)).await?;
 
                     dialogue.update(DialogState::Start).await.unwrap();
 

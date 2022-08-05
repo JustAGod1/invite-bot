@@ -514,6 +514,7 @@ dependencies = [
  "edit-distance",
  "env_logger",
  "log",
+ "regex",
  "sqlite",
  "teloxide",
  "tokio",
