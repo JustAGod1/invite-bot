@@ -281,7 +281,7 @@ async fn receive_name(
     };
 
     if user.is_none() {
-        bot.send_message(msg.chat.id, "Попробуй скопировать ФИО с https://abit.itmo.ru!").await?;
+        bot.send_message(msg.chat.id, "Не нашел тебя среди зачисленных. Проверь, что ты скопировал ФИО из личного кабинета abitlk.itmo.ru").await?;
         dialogue.update(DialogState::WaitingForName).await.unwrap();
         return Ok(());
     }
@@ -300,7 +300,7 @@ async fn receive_name(
             return Ok(());
         }
 
-        bot.send_message(msg.chat.id, format!("Ура! Ты успешно прошел проверку! Теперь заходи скорей по ссылке: {}\n\nИ не забудь зайти на новостной канал потока: https://t.me/news_y2022 !", INVITE_LINK)).await?;
+        bot.send_message(msg.chat.id, format!("ра! Ты успешно прошел проверку! Обязательно подпишись и включи уведомления на новостной канал: @news_y2022, а также вступай в чат с однокурсниками и кураторами: {}", INVITE_LINK)).await?;
     }
 
     return Ok(());
