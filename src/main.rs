@@ -174,7 +174,7 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
                 error!("{}", e);
                 bot.send_message(msg.chat.id, format!("{}", e)).await?;
             } else {
-                bot.send_message(msg.chat.id, format!("Добавил Telegram Id у {}", fullname)).await?;
+                bot.send_message(msg.chat.id, format!("Добавил {}", fullname)).await?;
             }
         }
         Command::DumpCsv => {
@@ -249,7 +249,8 @@ async fn start_dialog(
     bot.send_message(msg.chat.id,
                      "Привет, и добро пожаловать на КТ!\n\n\
                            Для того, чтобы добавить тебя в чат и канал первокурсников, мне нужно удостовериться, что ты есть в приказе на зачисление.\n\
-                           Пожалуйста, пришли свое полное ФИО, как оно указано в личном кабинете абитуриента abitlk.itmo.ru",
+                           Пожалуйста, пришли свое полное ФИО и последние 4 цифры телефона как оно указано в личном кабинете абитуриента abitlk.itmo.ru\n\
+                           Например: Иванов Иван Иванович 5411",
     ).send().await?;
 
     if let Err(e) = dialogue.update(DialogState::WaitingForName).await {
@@ -268,15 +269,19 @@ async fn receive_name(
     dialogue: Dialogue<DialogState, InMemStorage<DialogState>>,
     db: Arc<DBConn>,
 ) -> Result<(), RequestError> {
-    let format = "Пожалуйста отправь свое ФИО одним сообщением. Пример: Иванов Иван Иванович";
+    let format = "Пожалуйста отправь свое ФИО одним сообщением. Пример: Иванов Иван Иванович 5411";
     let text = if let Some(text) = msg.text() {
-        Regex::new("\\s").unwrap().replace(text, " ").to_string()
+        Regex::new("\\s").unwrap().replace(text, " ").trim().to_string()
     } else {
         bot.send_message(msg.chat.id, format).await?;
         return Ok(());
     };
+    if text.rfind(" ").is_none() {
+        bot.send_message(msg.chat.id, format).await?;
+        return Ok(());
+    }
 
-    let user = match db.find_by_full_name(&text) {
+    let user = match db.find_by_full_name(&text[..text.rfind(' ').unwrap()]) {
         Ok(v) => {
             if v.is_some() {
                 bot.send_message(msg.chat.id, "Нашел! Секундочку...").await?;
@@ -305,8 +310,30 @@ async fn receive_name(
         }
     };
 
-    if user.is_none() {
-        bot.send_message(msg.chat.id, "Не нашел тебя среди зачисленных. Проверь, что ты скопировал ФИО из личного кабинета abitlk.itmo.ru").await?;
+
+    let input_phone = &text[text.rfind(' ').unwrap() + 1..];
+
+    let username = user.as_ref().map(|u| u.full_name.clone());
+    let phone = user.as_ref().map(|u| u.phone_number.clone());
+
+    if username.is_none(){
+        bot.send_message(msg.chat.id, "Не нашел тебя среди зачисленных. Проверь, что ты скопировал ФИО и телефон из личного кабинета abitlk.itmo.ru").await?;
+        dialogue.update(DialogState::WaitingForName).await.unwrap();
+        return Ok(());
+    }
+
+    let phone = phone.unwrap();
+
+    if user.as_ref().is_some() && user.as_ref().unwrap().phone_number.is_none() {
+        bot.send_message(msg.chat.id, "К сожалению, мы не можем добавить тебя в чат автоматически. Напиши в лс @JustAG0d.").await?;
+        dialogue.update(DialogState::WaitingForName).await.unwrap();
+        return Ok(());
+    }
+
+    let phone = phone.unwrap();
+
+    if &phone[phone.len() - 4..] != input_phone {
+        bot.send_message(msg.chat.id, "Не нашел тебя среди зачисленных. Проверь, что ты скопировал ФИО и телефон из личного кабинета abitlk.itmo.ru").await?;
         dialogue.update(DialogState::WaitingForName).await.unwrap();
         return Ok(());
     }
@@ -325,7 +352,7 @@ async fn receive_name(
             return Ok(());
         }
 
-        bot.send_message(msg.chat.id, format!("ра! Ты успешно прошел проверку! Обязательно подпишись и включи уведомления на новостной канал: @news_y2022, а также вступай в чат с однокурсниками и кураторами: {}", INVITE_LINK)).await?;
+        bot.send_message(msg.chat.id, format!("Ура! Ты успешно прошел проверку! Обязательно подпишись и включи уведомления на новостной канал: @news_y2022, а также вступай в чат с однокурсниками и кураторами: {}", INVITE_LINK)).await?;
     }
 
     return Ok(());

@@ -4,6 +4,7 @@ use sqlite::{Connection, Row, State, Value};
 pub struct User {
     pub full_name: String,
     pub telegram_id: Option<String>,
+    pub phone_number: Option<String>
 }
 
 pub struct DBConn {
@@ -28,6 +29,7 @@ impl DBConn {
         Ok(User {
             full_name: cursor.try_get::<String, _>(0).map_err(|a| a.to_string())?,
             telegram_id: cursor.try_get::<Option<String>, _>(1).map_err(|a| a.to_string())?,
+            phone_number: cursor.try_get::<Option<String>, _>(2).map_err(|a| a.to_string())?,
         })
     }
 
@@ -35,7 +37,7 @@ impl DBConn {
         let conn = self.conn.lock()
             .map_err(|a| a.to_string())?;
         let mut cursor = conn
-            .prepare("SELECT full_name, telegram_id FROM users WHERE full_name = ? LIMIT 1")
+            .prepare("SELECT full_name, telegram_id, phone FROM users WHERE full_name = ? LIMIT 1")
             .map_err(|a| a.to_string())?
             .into_cursor()
             .bind(&[Value::String(name.to_string())])
@@ -54,7 +56,7 @@ impl DBConn {
         let conn = self.conn.lock()
             .map_err(|a| a.to_string())?;
         let mut cursor = conn
-            .prepare("SELECT full_name, telegram_id FROM users WHERE telegram_id = ? LIMIT 1")
+            .prepare("SELECT full_name, telegram_id, phone FROM users WHERE telegram_id = ? LIMIT 1")
             .map_err(|a| a.to_string())?
             .into_cursor()
             .bind(&[Value::String(id.to_string())])
@@ -147,7 +149,7 @@ impl DBConn {
         let conn = self.conn.lock()
             .map_err(|a| a.to_string())?;
         let mut cursor = conn
-            .prepare("SELECT full_name, telegram_id FROM users")
+            .prepare("SELECT full_name, telegram_id, phone FROM users")
             .map_err(|a| a.to_string())?
             .into_cursor()
             .bind(&[])
