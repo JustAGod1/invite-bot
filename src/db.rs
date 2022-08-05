@@ -25,7 +25,7 @@ impl DBConn {
         .map_err(|a| a.to_string())
     }
 
-    fn build_from_cursor(cursor: &Row) -> Result<User, String> {
+    pub fn build_from_cursor(cursor: &Row) -> Result<User, String> {
         Ok(User {
             full_name: cursor.try_get::<String, _>(0).map_err(|a| a.to_string())?,
             telegram_id: cursor.try_get::<Option<String>, _>(1).map_err(|a| a.to_string())?,

@@ -23,6 +23,8 @@ use std::str::FromStr;
 use chrono::Local;
 use env_logger::Builder;
 use regex::Regex;
+use sqlite::State;
+use crate::db::User;
 
 
 const GROUP_ID: i64 = -1001509012802;
@@ -209,7 +211,6 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
             }
         }
         Command::AddId => {
-
             let fullname_and_id = msg.text().unwrap_or("").trim()["/addid".len()..].trim();
             if fullname_and_id.rfind(" ").is_none() {
                 bot.send_message(msg.chat.id, "Неверный формат").await?;
@@ -238,7 +239,6 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
                     bot.send_message(msg.chat.id, format!("{}", e)).await?;
                 }
             }
-
         }
 
         Command::Resolve => {
@@ -321,7 +321,7 @@ async fn receive_name(
 ) -> Result<(), RequestError> {
     let format = "Пожалуйста отправь свое ФИО одним сообщением. Пример: Иванов Иван Иванович 5411";
     let text = if let Some(text) = msg.text() {
-        Regex::new("\\s").unwrap().replace(text, " ").trim().replace("й", "й").replace("ё", "ё").to_string()
+        Regex::new("\\s").unwrap().replace(text, " ").trim().to_string()
     } else {
         bot.send_message(msg.chat.id, format).await?;
         return Ok(());
@@ -366,7 +366,7 @@ async fn receive_name(
     let username = user.as_ref().map(|u| u.full_name.clone());
     let phone = user.as_ref().map(|u| u.phone_number.clone());
 
-    if username.is_none(){
+    if username.is_none() {
         bot.send_message(msg.chat.id, "Не нашел тебя среди зачисленных. Проверь, что ты скопировал ФИО и телефон из личного кабинета abitlk.itmo.ru").await?;
         dialogue.update(DialogState::WaitingForName).await.unwrap();
         return Ok(());
