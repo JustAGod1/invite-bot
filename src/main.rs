@@ -138,6 +138,8 @@ enum Command {
     Forget,
     #[command(description = "отдает бд файлом")]
     Dump,
+    #[command(description = "<ФИО> - добавляет ФИО")]
+    Add,
 }
 
 async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBConn>) -> Result<(), RequestError> {
@@ -164,6 +166,16 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
             if let Err(e) = bot.send_document(msg.chat.id, InputFile::file(PathBuf::from("db.sqlite"))).await {
                 error!("{:?}", e);
                 bot.send_message(msg.chat.id, format!("{:?}", e)).await?;
+            }
+        }
+        Command::Add => {
+            let fullname = msg.text().unwrap_or("").trim()["/add".len()..].trim();
+
+            if let Err(e) = db.add_fullname(fullname) {
+                error!("{}", e);
+                bot.send_message(msg.chat.id, format!("{}", e)).await?;
+            } else {
+                bot.send_message(msg.chat.id, format!("Добавил Telegram Id у {}", fullname)).await?;
             }
         }
     }

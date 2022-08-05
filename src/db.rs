@@ -139,5 +139,29 @@ impl DBConn {
         Ok(())
     }
 
+    pub fn add_fullname(&self, fullname: &str) -> Result<(), String> {
+        let conn = self.conn.lock()
+            .map_err(|a| a.to_string())?;
+
+        let mut statement = conn.prepare("INSERT INTO users (full_name) VALUES (?)")
+            .map_err(|a| a.to_string())?
+            .bind(1, fullname.to_string().as_str()).map_err(|a| a.to_string())?;
+
+        loop {
+            match statement.next() {
+                Ok(v) => {
+                    if matches!(v, State::Done) {
+                        break
+                    }
+                }
+                Err(a) => {
+                    return Err(a.to_string());
+                }
+            }
+        }
+
+        Ok(())
+    }
+
 
 }
