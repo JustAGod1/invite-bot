@@ -138,6 +138,8 @@ enum Command {
     Forget,
     #[command(description = "отдает бд файлом")]
     Dump,
+    #[command(description = "отдает бд сообщением")]
+    DumpCsv,
     #[command(description = "<ФИО> - добавляет ФИО")]
     Add,
 }
@@ -176,6 +178,17 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Arc<DBCo
                 bot.send_message(msg.chat.id, format!("{}", e)).await?;
             } else {
                 bot.send_message(msg.chat.id, format!("Добавил Telegram Id у {}", fullname)).await?;
+            }
+        }
+        Command::DumpCsv => {
+            match db.dump_to_csv() {
+                Ok(v) => {
+                    bot.send_message(msg.chat.id, v).await?;
+                }
+                Err(e) => {
+                    error!("{}", e);
+                    bot.send_message(msg.chat.id, format!("{}", e)).await?;
+                }
             }
         }
     }

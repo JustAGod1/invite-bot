@@ -163,5 +163,24 @@ impl DBConn {
         Ok(())
     }
 
+    pub fn dump_to_csv(&self) -> Result<String, String> {
+        let conn = self.conn.lock()
+            .map_err(|a| a.to_string())?;
+        let mut cursor = conn
+            .prepare("SELECT full_name, telegram_id FROM users")
+            .map_err(|a| a.to_string())?
+            .into_cursor()
+            .bind(&[])
+            .map_err(|a| a.to_string())?;
+
+        let mut result = String::new();
+
+
+        while let Some(Ok(row)) = cursor.next() {
+            let user = Self::build_from_cursor(&row)?;
+            result.push_str(&format!("\"{}\",{}\n", user.full_name, user.telegram_id.unwrap_or("".to_string())));
+        }
+        Ok(result)
+    }
 
 }
