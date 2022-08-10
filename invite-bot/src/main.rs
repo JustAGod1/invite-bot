@@ -431,6 +431,10 @@ async fn receive_name(
         }
     };
 
+    let not_found_message = "Не нашел тебя среди зачисленных. Проверь, что ты скопировал ФИО и телефон из личного кабинета abitlk.itmo.ru.\n\n\
+    Если ты уверен, что все проверил, а бот все равно не пускает, возможно произошла ошибка бота. Напиши свое ФИО и 4 цифры телефона в лс @JustAG0d. Вероятно он решит данную проблему.
+    ";
+
 
     let input_phone = &text[text.rfind(' ').unwrap() + 1..];
 
@@ -438,7 +442,7 @@ async fn receive_name(
     let phone = user.as_ref().map(|u| u.phone.clone());
 
     if username.is_none() {
-        bot.send_message(msg.chat.id, "Не нашел тебя среди зачисленных. Проверь, что ты скопировал ФИО и телефон из личного кабинета abitlk.itmo.ru").await?;
+        bot.send_message(msg.chat.id, not_found_message).await?;
         dialogue.update(DialogState::WaitingForName).await.unwrap();
         return Ok(());
     }
@@ -454,7 +458,7 @@ async fn receive_name(
     let phone = phone.unwrap();
 
     if &phone[phone.len() - 4..] != input_phone {
-        bot.send_message(msg.chat.id, "Не нашел тебя среди зачисленных. Проверь, что ты скопировал ФИО и телефон из личного кабинета abitlk.itmo.ru").await?;
+        bot.send_message(msg.chat.id, not_found_message).await?;
         dialogue.update(DialogState::WaitingForName).await.unwrap();
         return Ok(());
     }
