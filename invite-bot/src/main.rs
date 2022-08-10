@@ -111,13 +111,17 @@ async fn run() -> Result<(), String> {
 async fn check_group_message(m: Message, b: AutoSend<Bot>, db: Database) -> Result<(), String> {
     if let MessageKind::NewChatMembers(members) = m.kind {
         for member in members.new_chat_members {
-            check_member(&member.id, b.clone(), db.clone()).await?
+            check_member(&member.id, b.clone(), db.clone(), true, m.id).await?
+        }
+    } else if let MessageKind::Common(msg) = m.kind {
+        if let Some(user) = msg.from {
+            check_member(&user.id, b.clone(), db.clone(), false, m.id).await?;
         }
     }
     Ok(())
 }
 
-async fn check_member(member: &UserId, b: AutoSend<Bot>, arc: Database) -> Result<(), String> {
+async fn check_member(member: &UserId, b: AutoSend<Bot>, arc: Database, act: bool, message_id: i32) -> Result<(), String> {
     use orm::schema::users;
     let r: Vec<orm::models::User> = users::table
         .filter(users::telegram_id.eq_all(member.0.to_string()))
@@ -126,7 +130,20 @@ async fn check_member(member: &UserId, b: AutoSend<Bot>, arc: Database) -> Resul
     let exists = r.len() > 0;
 
     if !exists {
-        b.kick_chat_member(ChatId(GROUP_ID), member.clone()).await.map_err(|a| a.to_string())?;
+        if act {
+            b.kick_chat_member(ChatId(GROUP_ID), member.clone()).await.map_err(|a| a.to_string())?;
+        } else {
+            let member = b.get_chat_member(ChatId(GROUP_ID), member.clone())
+                .await
+                .map_err(|a| format!("{:?}", a))?;
+            if !member.is_administrator() {
+                b.send_message(ChatId(GROUP_ID), "@JustAG0d this user is not in database")
+                    .reply_to_message_id(message_id)
+                    .send()
+                    .await
+                    .map_err(|a| format!("{:?}", a))?;
+            }
+        }
     }
 
 
