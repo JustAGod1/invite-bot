@@ -136,7 +136,7 @@ async fn check_member(member: &UserId, b: AutoSend<Bot>, arc: Database, act: boo
             let member = b.get_chat_member(ChatId(GROUP_ID), member.clone())
                 .await
                 .map_err(|a| format!("{:?}", a))?;
-            if !member.is_administrator() {
+            if !member.is_administrator() && !member.is_owner() {
                 b.send_message(ChatId(GROUP_ID), "@JustAG0d this user is not in database")
                     .reply_to_message_id(message_id)
                     .send()
