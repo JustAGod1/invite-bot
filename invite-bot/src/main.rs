@@ -123,8 +123,8 @@ async fn check_group_message(m: Message, b: AutoSend<Bot>, db: Database) -> Resu
 
 async fn check_member(member: &UserId, b: AutoSend<Bot>, arc: Database, act: bool, message_id: i32) -> Result<(), String> {
     use orm::schema::users;
-    let r: Vec<orm::models::User> = users::table
-        .filter(users::telegram_id.eq_all(member.0.to_string()))
+    let r: Vec<User> = users::table
+        .filter(telegram_id.eq_all(member.0.to_string()))
         .load(&*arc.lock().unwrap())
         .map_err(|e| format!("{}", e))?;
     let exists = r.len() > 0;
@@ -211,7 +211,7 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Database
         Command::Forget => {
             let fullname = msg.text().unwrap_or("").trim()["/forget".len()..].trim();
 
-            let r = update(orm::schema::users::table.filter(orm::schema::users::full_name.eq_all(fullname)))
+            let r = update(orm::schema::users::table.filter(full_name.eq_all(fullname)))
                 .set(telegram_id.eq_all(None as Option<String>))
                 .execute(&*db.lock().unwrap());
 
@@ -246,8 +246,8 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Database
         }
         Command::DumpCsv => {
             let u = users
-                .order_by(orm::schema::users::full_name.asc())
-                .load::<orm::models::User>(&*db.lock().unwrap());
+                .order_by(full_name.asc())
+                .load::<User>(&*db.lock().unwrap());
             if let Err(e) = u {
                 error!("{}", e);
                 bot.send_message(msg.chat.id, format!("{}", e)).await?;
