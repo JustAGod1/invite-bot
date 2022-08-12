@@ -211,7 +211,8 @@ async fn answer(msg: Message, bot: AutoSend<Bot>, command: Command, db: Database
         Command::Forget => {
             let fullname = msg.text().unwrap_or("").trim()["/forget".len()..].trim();
 
-            let r = orm::diesel::delete(orm::schema::users::table.filter(orm::schema::users::full_name.eq_all(fullname)))
+            let r = update(orm::schema::users::table.filter(orm::schema::users::full_name.eq_all(fullname)))
+                .set(telegram_id.eq_all(None as Option<String>))
                 .execute(&*db.lock().unwrap());
 
             if let Err(e) = r {
